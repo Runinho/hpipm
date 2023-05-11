@@ -184,6 +184,8 @@
 #define OCP_QP_IPM_PREDICT d_ocp_qp_ipm_predict
 #define OCP_QP_IPM_SENS d_ocp_qp_ipm_sens
 
+#define OCP_LOOP_COND d_ocp_loop_cond
+
 
 
 #include "x_ocp_qp_ipm.c"

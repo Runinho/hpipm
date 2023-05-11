@@ -1,3 +1,5 @@
+int OCP_LOOP_COND(int kk, struct OCP_QP_IPM_ARG *arg, struct CORE_QP_IPM_WORKSPACE *cws,
+               double *qp_res_max, double tau_min);
 /**************************************************************************************************
 *                                                                                                 *
 * This file is part of HPIPM.                                                                     *
@@ -2603,12 +2605,13 @@ void OCP_QP_IPM_SOLVE(struct OCP_QP *qp, struct OCP_QP_SOL *qp_sol, struct OCP_Q
 	// relative (delta) IPM formulation
 
 	// IPM loop
-	for(kk=0; kk<arg->iter_max & \
-			cws->alpha>arg->alpha_min & \
-			(qp_res_max[0]>arg->res_g_max | \
-			qp_res_max[1]>arg->res_b_max | \
-			qp_res_max[2]>arg->res_d_max | \
-			fabs(qp_res_max[3]-tau_min) > arg->res_m_max) \
+	for(kk=0; OCP_LOOP_COND(kk, arg, cws, qp_res_max, tau_min) \
+//                         kk<arg->iter_max & \
+//			cws->alpha>arg->alpha_min & \
+//			(qp_res_max[0]>arg->res_g_max | \
+//			qp_res_max[1]>arg->res_b_max | \
+//			qp_res_max[2]>arg->res_d_max | \
+//			fabs(qp_res_max[3]-tau_min) > arg->res_m_max)
 			; kk++)
 		{
 
@@ -2681,6 +2684,58 @@ call_return:
 	return;
 
 	}
+
+    int OCP_LOOP_COND(int kk, struct OCP_QP_IPM_ARG *arg, struct CORE_QP_IPM_WORKSPACE *cws,
+                   double *qp_res_max, double tau_min)
+    {
+//        static int last_call_s = 0;
+//        int last_call = last_call_s;
+//        last_call_s = kk;
+//        static int was_accurate_enough = 0;
+//        // reset on first iteration LOL
+//        if(kk == 0){
+//            printf("resteting accurate enough\n");
+//            was_accurate_enough = 0;
+//        }
+        //          kk<arg->iter_max & \
+//			cws->alpha>arg->alpha_min & \
+//			(qp_res_max[0]>arg->res_g_max | \
+//			qp_res_max[1]>arg->res_b_max | \
+//			qp_res_max[2]>arg->res_d_max | \
+//			fabs(qp_res_max[3]-tau_min) > arg->res_m_max)
+        if (!(kk < arg->iter_max))
+        {
+            printf("QP STOP cause (iter %d): max iter in qp\n", kk);
+            return 0;  // break
+        }
+        else if (!(cws->alpha > arg->alpha_min))
+        {
+            printf("QP STOP cause (iter %d): cws alpha to small\n", kk);
+            return 0;  // break
+        }
+        else
+        {
+            // check if the required resolution accuracy? was found:
+             int need_another = qp_res_max[0] > arg->res_g_max | qp_res_max[1] > arg->res_b_max |
+                                qp_res_max[2] > arg->res_d_max |
+                                fabs(qp_res_max[3] - tau_min) > arg->res_m_max;
+            if (!need_another)
+            {
+                if (kk < 2){
+                    printf("QP (iter %d): forcing another iteration (even though solution is accurate enough)\n", kk);
+                    return 1; // continue
+                }
+//                else if (!was_accurate_enough) {
+//                    was_accurate_enough = 1;
+//                    printf("QP (iter %d): forcing another iteration (accuracy improvment??)\n", kk);
+//                    return 1; // continue
+//                }
+                printf("QP STOP cause (iter %d): solution accurate enough\n", kk);
+                return 0;
+            }
+        }
+        return 1;
+    }
 
 
 
